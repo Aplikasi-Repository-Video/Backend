@@ -34,6 +34,15 @@ routes.post(
     ]),
     videoController.createVideo
 );
+routes.put(
+    '/videos/:id',
+    upload.fields([
+        { name: 'video', maxCount: 1 },
+        { name: 'thumbnail', maxCount: 1 }
+    ]),
+    videoController.updateVideo
+);
+routes.delete('/videos/:id', videoController.deleteVideo)
 
 
 

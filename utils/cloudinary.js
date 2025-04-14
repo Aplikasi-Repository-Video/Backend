@@ -7,4 +7,16 @@ cloudinary.config({
     api_secret: process.env.API_SECRET
 });
 
-module.exports = cloudinary;
+exports = deleteFromCloudinary = async (url) => {
+    if (!url) return;
+
+    const publicId = url.split('/').pop().split('.')[0];
+
+    try {
+        await cloudinary.uploader.destroy(publicId);
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+module.exports = cloudinary
