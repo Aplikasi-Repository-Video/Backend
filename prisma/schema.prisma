@@ -44,13 +44,13 @@ model Video {
   duration      String
   video_url     String
   thumbnail_url String
-  category_id   Int
+  category_id   Int?
   user_id       Int
   created       DateTime
   updated       DateTime
 
-  Category Category @relation(fields: [category_id], references: [id])
-  User     User     @relation(fields: [user_id], references: [id])
+  Category Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  User     User      @relation(fields: [user_id], references: [id])
 
   Comment      Comment[]
   Like         Like[]

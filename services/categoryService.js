@@ -15,7 +15,11 @@ const getCategoryById = async (id) => {
 
 const createCategory = async (category) => {
     return await prisma.category.create({
-        data: category,
+        data: {
+            name: category.name,
+            created: new Date(),
+            updated: new Date(),
+        }
     });
 };
 
@@ -24,7 +28,10 @@ const updateCategory = async (id, category) => {
         where: {
             id: id,
         },
-        data: category,
+        data: {
+            name: category.name,
+            updated: new Date(),
+        },
     });
 };
 
