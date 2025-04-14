@@ -1,6 +1,9 @@
-const routes = require('express').Router()
 const userController = require('../controllers/userController')
 const categoryController = require('../controllers/categoryController')
+const videoController = require('../controllers/videoController')
+
+const routes = require('express').Router()
+const upload = require('../middleware/upload');
 
 routes.get('/', (req, res) => {
     res.json({
@@ -20,6 +23,19 @@ routes.get('/categories/:id', categoryController.getCategoryById)
 routes.post('/categories', categoryController.createCategory)
 routes.put('/categories/:id', categoryController.updateCategory)
 routes.delete('/categories/:id', categoryController.deleteCategory)
+
+routes.get('/videos', videoController.getAllVideos)
+routes.get('/videos/:id', videoController.getVideoById)
+routes.post(
+    '/videos',
+    upload.fields([
+        { name: 'video', maxCount: 1 },
+        { name: 'thumbnail', maxCount: 1 }
+    ]),
+    videoController.createVideo
+);
+
+
 
 
 module.exports = routes

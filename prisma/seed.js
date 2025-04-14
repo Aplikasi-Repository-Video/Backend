@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 async function main() {
     // Hapus data lama terlebih dahulu
-    await prisma.wathchHistory.deleteMany();
+    await prisma.watchHistory.deleteMany();
     await prisma.like.deleteMany();
     await prisma.comment.deleteMany();
     await prisma.video.deleteMany();
@@ -55,9 +55,9 @@ async function main() {
             data: {
                 title: `Video ${i}`,
                 description: `Description of Video ${i}`,
-                duration: `00:${String(i).padStart(2, '0')}:00`,
-                video_url: `http://example.com/video${i}`,
-                thumbnail_url: `http://example.com/thumbnail${i}.jpg`,
+                duration: `00:00:24`,
+                video_url: `https://res.cloudinary.com/dr2nxslaq/video/upload/v1744656550/videos/ahwsabsnod1gbt6oops1.mp4`,
+                thumbnail_url: `https://res.cloudinary.com/dr2nxslaq/image/upload/v1744656552/thumbnails/l6az5r6oi2maxkh7tjvk.jpg`,
                 created: new Date(),
                 updated: new Date(),
                 category_id: categories[i % categories.length].id,
@@ -99,7 +99,7 @@ async function main() {
     // Seed Watch History
     const watchHistories = [];
     for (let i = 1; i <= 10; i++) {
-        const watchHistory = await prisma.wathchHistory.create({
+        const watchHistory = await prisma.watchHistory.create({
             data: {
                 duration_watch: `00:${String(i).padStart(2, '0')}:00`,
                 created: new Date(),

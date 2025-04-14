@@ -1,12 +1,15 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
-const dotenv = require('dotenv');
 
 const PORT = process.env.PORT || 3000;
 
 const app = express();
 const router = require('./routes/routes');
+const path = require('path');
+
+// Serve static files from uploads folder
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 app.use(morgan('dev'));
 app.use(cors());
