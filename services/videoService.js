@@ -19,7 +19,6 @@ const getVideoById = async (id) => {
 const createVideo = async ({ title, description, category_id, user_id, videoFile, thumbnailFile }) => {
     const uploadedVideo = await uploadFromBuffer(videoFile.buffer, 'videos', 'video');
     const uploadedThumbnail = await uploadFromBuffer(thumbnailFile.buffer, 'thumbnails', 'image');
-    console.log("uploadedVideo", uploadedVideo);
 
     function secondsToHMS(seconds) {
         const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -27,7 +26,7 @@ const createVideo = async ({ title, description, category_id, user_id, videoFile
         const s = Math.floor(seconds % 60).toString().padStart(2, '0');
         return `${h}:${m}:${s}`;
     }
-    const durationFormatted = secondsToHMS(uploadedVideo.duration); // "00:00:39"
+    const durationFormatted = secondsToHMS(uploadedVideo.duration);
 
 
     const newVideo = await prisma.video.create({
