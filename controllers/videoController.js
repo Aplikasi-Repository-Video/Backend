@@ -83,6 +83,11 @@ const updateVideo = async (req, res) => {
 
 const deleteVideo = async (req, res) => {
     try {
+        const { error } = validateVideoId.validate(req.params);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
+
         const deleted = await videoService.deleteVideo(+req.params.id);
         return res.status(200).json({ message: 'Video berhasil dihapus', data: deleted });
     } catch (error) {
