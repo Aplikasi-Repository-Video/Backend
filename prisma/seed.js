@@ -10,13 +10,15 @@ async function main() {
     await prisma.user.deleteMany();
     await prisma.category.deleteMany();
 
+    console.log('Data berhasil dihapus');
+
     // reset auto increment
     await prisma.$executeRaw`ALTER SEQUENCE "user_id_seq" RESTART WITH 1`;
     await prisma.$executeRaw`ALTER SEQUENCE "video_id_seq" RESTART WITH 1`;
     await prisma.$executeRaw`ALTER SEQUENCE "category_id_seq" RESTART WITH 1`;
     await prisma.$executeRaw`ALTER SEQUENCE "comment_id_seq" RESTART WITH 1`;
     await prisma.$executeRaw`ALTER SEQUENCE "like_id_seq" RESTART WITH 1`;
-    await prisma.$executeRaw`ALTER SEQUENCE "wathch_history_id_seq" RESTART WITH 1`;
+    await prisma.$executeRaw`ALTER SEQUENCE "watch_history_id_seq" RESTART WITH 1`;
 
     // Seed Categories
     const categories = [];
@@ -105,6 +107,7 @@ async function main() {
                 created: new Date(),
                 updated: new Date(),
                 user_id: users[i % users.length].id,
+                guest_id: `guest${new Date().getTime()}`,
                 video_id: videos[i % videos.length].id,
             },
         });
