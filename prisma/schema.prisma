@@ -78,8 +78,8 @@ model Comment {
   created  DateTime
   updated  DateTime
 
-  User  User  @relation(fields: [user_id], references: [id])
-  Video Video @relation(fields: [video_id], references: [id])
+  User  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
 
   @@map("comment")
 }
@@ -91,8 +91,8 @@ model Like {
   created  DateTime
   updated  DateTime
 
-  User  User  @relation(fields: [user_id], references: [id])
-  Video Video @relation(fields: [video_id], references: [id])
+  User  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
 
   @@map("like")
 }
@@ -105,8 +105,8 @@ model WatchHistory {
   created        DateTime
   updated        DateTime
 
-  User  User  @relation(fields: [user_id], references: [id])
-  Video Video @relation(fields: [video_id], references: [id])
+  User  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
 
   @@map("wathch_history")
 }
