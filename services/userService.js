@@ -25,22 +25,40 @@ const getAllUsers = async () => {
 };
 
 const getUserById = async (id) => {
-    return await prisma.user.findUnique({
+
+    const user = await prisma.user.findUnique({
         where: {
             id: id,
         },
     });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    return user;
 };
 
 const getUserByEmail = async (email) => {
-    return await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
         where: {
             email: email,
         },
     });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    return user;
 };
 
 const updateUser = async (id, user) => {
+    const userExist = await getUserById(id);
+
+    if (!userExist) {
+        throw new Error('User not found');
+    }
     const data = {
         name: user.name,
         email: user.email,
@@ -61,6 +79,12 @@ const updateUser = async (id, user) => {
 };
 
 const deleteUser = async (id) => {
+    const userExist = await getUserById(id);
+
+    if (!userExist) {
+        throw new Error('User not found');
+    }
+
     const deletedUser = await prisma.user.update({
         where: {
             id: id,

@@ -50,7 +50,7 @@ async function main() {
         users.push(user);
     }
 
-    // Seed Videos
+    // Seed Videos with Full-Text Searchable Data
     const videos = [];
     for (let i = 1; i <= 10; i++) {
         const video = await prisma.video.create({
@@ -64,6 +64,7 @@ async function main() {
                 updated: new Date(),
                 category_id: categories[i % categories.length].id,
                 user_id: users[i % users.length].id,
+                searchable: `Video ${i} Description of Video ${i}`, // Full-Text Searchable data
             },
         });
         videos.push(video);

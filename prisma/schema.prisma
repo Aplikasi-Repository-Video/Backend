@@ -49,6 +49,8 @@ model Video {
   created       DateTime
   updated       DateTime
 
+  searchable String @db.Text // Kolom ini akan digunakan untuk FTS
+
   Category Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
   User     User      @relation(fields: [user_id], references: [id])
 
