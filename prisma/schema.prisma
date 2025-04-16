@@ -49,6 +49,8 @@ model Video {
   created       DateTime
   updated       DateTime
 
+  searchable String @db.Text // Kolom ini akan digunakan untuk FTS
+
   Category Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
   User     User      @relation(fields: [user_id], references: [id])
 
@@ -99,14 +101,15 @@ model Like {
 
 model WatchHistory {
   id             Int      @id @default(autoincrement())
-  user_id        Int
+  user_id        Int?
+  guest_id       String?
   video_id       Int
   duration_watch String
   created        DateTime
   updated        DateTime
 
-  User  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  User  User? @relation(fields: [user_id], references: [id], onDelete: Cascade)
   Video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
 
-  @@map("wathch_history")
+  @@map("watch_history")
 }
