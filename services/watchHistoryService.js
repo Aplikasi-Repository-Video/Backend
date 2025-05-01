@@ -1,11 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const assignUserIdentity = require('../utils/assignUserIdentity'); // sesuaikan path-nya
+const { de } = require('@faker-js/faker');
 
 const createWatchHistory = async (watchHistory) => {
     let data = {
         video_id: +watchHistory.video_id,
-        duration_watch: watchHistory.duration_watch,
+        duration_watch: +watchHistory.duration_watch,
         created: new Date(),
         updated: new Date()
     };
@@ -20,7 +21,6 @@ const getAllWatchHistory = async (watchHistory) => {
     let where = {};
 
     const data = assignUserIdentity(watchHistory, where);
-    console.log(data);
     const result = await prisma.watchHistory.findMany({
         where: data,
         include: {
@@ -31,14 +31,21 @@ const getAllWatchHistory = async (watchHistory) => {
     return result;
 };
 
+const getWatchHistoryById = async (id) => {
+    const result = await prisma.watchHistory.findUnique({ where: { id } });
+
+    if (!result) {
+        throw new Error('Riwayat tidak ditemukan');
+    }
+
+    return result;
+}
+
 const updateWatchHistory = async (id, watchHistory) => {
     let data = {
-        video_id: +watchHistory.video_id,
-        duration_watch: watchHistory.duration_watch,
+        duration_watch: +watchHistory.duration_watch,
         updated: new Date()
     };
-
-    data = assignUserIdentity(watchHistory, data);
 
     const result = await prisma.watchHistory.update({
         where: {
@@ -51,11 +58,14 @@ const updateWatchHistory = async (id, watchHistory) => {
 };
 
 const deleteWatchHistory = async (id) => {
-    return await prisma.watchHistory.delete({
-        where: {
-            id: id
-        }
+    await getWatchHistoryById(id);
+
+    const result = await prisma.watchHistory.delete({
+        where: { id }
     });
+
+    return result;
+
 }
 
 module.exports = {

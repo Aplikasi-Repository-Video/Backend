@@ -1,40 +1,51 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const likeVideo = async ({ user_id, video_id }) => {
-    return await prisma.like.create({
-        data: {
-            user_id,
-            video_id,
-            created: new Date(),
-            updated: new Date()
+const toggleLike = async ({ user_id, video_id }) => {
+    const existingLike = await prisma.like.findFirst({
+        where: {
+            user_id: +user_id,
+            video_id: +video_id
         }
     });
-};
 
-const unlikeVideo = async (id) => {
-    return await prisma.like.delete({ where: { id } });
-};
+    if (existingLike) {
+        await prisma.like.delete({
+            where: { id: existingLike.id }
+        });
+        return { message: 'Unliked' };
+    } else {
+        const newLike = await prisma.like.create({
+            data: {
+                user_id: +user_id,
+                video_id: +video_id,
+                created: new Date(),
+                updated: new Date()
+            }
+        });
+        return newLike;
+    }
+}
 
 const getLikesByVideoId = async (video_id) => {
     const likes = await prisma.like.findMany({
         where: { video_id },
-        include: {
+        select: {
+            video_id: true,
+            user_id: true,
             User: {
                 select: {
-                    id: true,
                     name: true,
                     email: true
                 }
             }
         }
-    });
+    })
     const total = await prisma.like.count({ where: { video_id } });
     return { likes, total };
 };
 
 module.exports = {
-    likeVideo,
-    unlikeVideo,
-    getLikesByVideoId
+    getLikesByVideoId,
+    toggleLike
 };

@@ -4,6 +4,7 @@ const videoController = require('../controllers/videoController')
 const commentController = require('../controllers/commentController');
 const likeController = require('../controllers/likeController');
 const watchHistoryControiller = require('../controllers/watchHistoryController');
+const searchController = require('../controllers/searchController');
 
 const routes = require('express').Router()
 const upload = require('../middleware/upload');
@@ -22,7 +23,7 @@ routes.put('/users/:id', userController.updateUser)
 routes.delete('/users/:id', userController.deleteUser)
 
 routes.get('/categories', categoryController.getAllCategories)
-routes.get('/categories/:id', categoryController.getCategoryById)
+// routes.get('/categories/:id', categoryController.getCategoryById)
 routes.post('/categories', categoryController.createCategory)
 routes.put('/categories/:id', categoryController.updateCategory)
 routes.delete('/categories/:id', categoryController.deleteCategory)
@@ -37,13 +38,15 @@ routes.post('/comments', commentController.createComment)
 routes.get('/comments/:videoId', commentController.getComments)
 routes.delete('/comments/:id', commentController.deleteComment)
 
-routes.post('/likes', likeController.createLike)
+routes.post('/likes', likeController.toggleLike)
 routes.get('/likes/:videoId', likeController.getLikes)
-routes.delete('/likes/:id', likeController.deleteLike)
 
 routes.post('/watch-history', watchHistoryControiller.createWatchHistory)
 routes.get('/watch-history/', watchHistoryControiller.getAllWatchHistory)
 routes.put('/watch-history/:id', watchHistoryControiller.updateWatchHistory)
 routes.delete('/watch-history/:id', watchHistoryControiller.deleteWatchHistory)
+
+routes.get('/search', searchController.searchController)
+
 
 module.exports = routes

@@ -4,6 +4,12 @@ const bcrypt = require('bcryptjs');
 const SALT = +process.env.SALT;
 
 const createUser = async (user) => {
+    const userExist = await getUserByEmail(user.email);
+
+    if (userExist) {
+        throw new Error('User already exist');
+    }
+
     const data = {
         name: user.name,
         email: user.email,
@@ -46,19 +52,18 @@ const getUserByEmail = async (email) => {
         },
     });
 
-    if (!user) {
-        throw new Error('User not found');
-    }
-
     return user;
 };
 
 const updateUser = async (id, user) => {
-    const userExist = await getUserById(id);
+    await getUserById(id);
 
-    if (!userExist) {
-        throw new Error('User not found');
+    const userEmailExist = await getUserByEmail(user.email);
+
+    if (userEmailExist && userEmailExist.id !== id) {
+        throw new Error('Email telah digunakan');
     }
+
     const data = {
         name: user.name,
         email: user.email,
@@ -82,7 +87,7 @@ const deleteUser = async (id) => {
     const userExist = await getUserById(id);
 
     if (!userExist) {
-        throw new Error('User not found');
+        throw new Error('Pengguna tidak ditemukan');
     }
 
     const deletedUser = await prisma.user.update({
