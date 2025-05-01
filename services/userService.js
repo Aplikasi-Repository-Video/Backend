@@ -7,7 +7,7 @@ const createUser = async (user) => {
     const userExist = await getUserByEmail(user.email);
 
     if (userExist) {
-        throw new Error('User already exist');
+        throw new Error('Email sudah digunakan');
     }
 
     const data = {
@@ -39,7 +39,7 @@ const getUserById = async (id) => {
     });
 
     if (!user) {
-        throw new Error('User not found');
+        throw new Error('Pengguna tidak ditemukan');
     }
 
     return user;
@@ -55,33 +55,49 @@ const getUserByEmail = async (email) => {
     return user;
 };
 
-const updateUser = async (id, user) => {
+const updateUser = async (id, user, isAdmin) => {
+    if (isAdmin) {
+        const { role, isActive } = user;
+
+        if (role && !['USER', 'ADMIN'].includes(role)) {
+            throw new Error('Role tidak valid');
+        }
+
+        if (isActive !== undefined && typeof isActive !== 'boolean') {
+            throw new Error('Status isActive harus boolean');
+        }
+    }
+
     await getUserById(id);
 
-    const userEmailExist = await getUserByEmail(user.email);
-
-    if (userEmailExist && userEmailExist.id !== id) {
-        throw new Error('Email telah digunakan');
+    if (user.email) {
+        const userEmailExist = await getUserByEmail(user.email);
+        if (userEmailExist && userEmailExist.id !== id) {
+            throw new Error('Email telah digunakan');
+        }
     }
+
 
     const data = {
         name: user.name,
         email: user.email,
-        password: bcrypt.hashSync(user.password, SALT),
-        updated: new Date()
+        password: user.password ? bcrypt.hashSync(user.password, SALT) : undefined,
+        updated: new Date(),
+        ...(isAdmin && { role: user.role, isActive: user.isActive })
     };
 
+    Object.keys(data).forEach((key) => data[key] === undefined && delete data[key]);
+
     const updatedUser = await prisma.user.update({
-        where: {
-            id: id,
-        },
-        data: data,
+        where: { id },
+        data,
     });
 
     const { password, ...userWithoutPassword } = updatedUser;
-
     return userWithoutPassword;
 };
+
+
 
 const deleteUser = async (id) => {
     const userExist = await getUserById(id);

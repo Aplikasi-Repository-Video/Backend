@@ -1,52 +1,22 @@
-const userController = require('../controllers/userController')
-const categoryController = require('../controllers/categoryController')
-const videoController = require('../controllers/videoController')
-const commentController = require('../controllers/commentController');
-const likeController = require('../controllers/likeController');
-const watchHistoryControiller = require('../controllers/watchHistoryController');
-const searchController = require('../controllers/searchController');
+const express = require('express');
+const router = express.Router();
+const routeConfigs = require('./routeConfig');
 
-const routes = require('express').Router()
-const upload = require('../middleware/upload');
+const authenticateToken = require('../middleware/authMiddleware');
+const authorizeRoles = require('../middleware/roleMiddleware');
 
-routes.get('/', (req, res) => {
-    res.json({
-        message: 'Hello World'
-    })
-})
+const middlewareMap = {
+    auth: authenticateToken,
+    user: authorizeRoles('USER', 'ADMIN'),
+    admin: authorizeRoles('ADMIN'),
+};
 
-routes.get('/users', userController.getAllUsers)
-routes.get('/users/email/:email', userController.getUserByEmail)
-routes.get('/users/id/:id', userController.getUserById)
-routes.post('/users', userController.createUser)
-routes.put('/users/:id', userController.updateUser)
-routes.delete('/users/:id', userController.deleteUser)
+routeConfigs.forEach(({ method, path, controller, middlewares }) => {
+    const resolvedMiddleware = middlewares.map(mw =>
+        typeof mw === 'string' ? middlewareMap[mw] : mw
+    );
 
-routes.get('/categories', categoryController.getAllCategories)
-// routes.get('/categories/:id', categoryController.getCategoryById)
-routes.post('/categories', categoryController.createCategory)
-routes.put('/categories/:id', categoryController.updateCategory)
-routes.delete('/categories/:id', categoryController.deleteCategory)
+    router[method](path, ...resolvedMiddleware, controller);
+});
 
-routes.get('/videos', videoController.getAllVideos)
-routes.get('/videos/:id', videoController.getVideoById)
-routes.post('/videos', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]), videoController.createVideo);
-routes.put('/videos/:id', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]), videoController.updateVideo);
-routes.delete('/videos/:id', videoController.deleteVideo)
-
-routes.post('/comments', commentController.createComment)
-routes.get('/comments/:videoId', commentController.getComments)
-routes.delete('/comments/:id', commentController.deleteComment)
-
-routes.post('/likes', likeController.toggleLike)
-routes.get('/likes/:videoId', likeController.getLikes)
-
-routes.post('/watch-history', watchHistoryControiller.createWatchHistory)
-routes.get('/watch-history/', watchHistoryControiller.getAllWatchHistory)
-routes.put('/watch-history/:id', watchHistoryControiller.updateWatchHistory)
-routes.delete('/watch-history/:id', watchHistoryControiller.deleteWatchHistory)
-
-routes.get('/search', searchController.searchController)
-
-
-module.exports = routes
+module.exports = router;

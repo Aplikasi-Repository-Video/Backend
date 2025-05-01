@@ -1,9 +1,9 @@
 const userService = require("../services/userService");
-const { validateUser, validateUserId, validateUserEmail } = require("../validations/userValidation");
+const { validateUser, validateUserId, validateUserEmail, validateUserAdmin, validateCreateUser } = require("../validations/userValidation");
 
 const createUser = async (req, res) => {
     try {
-        const { error } = validateUser.validate(req.body);
+        const { error } = validateCreateUser.validate(req.body);
 
         if (error) {
             return res.status(400).json({
@@ -99,7 +99,11 @@ const getUserByEmail = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         const { error: userIdError } = validateUserId.validate(req.params);
-        const { error: userError } = validateUser.validate(req.body);
+        const isAdmin = req.user.role === 'ADMIN';
+
+        // Pilih skema validasi sesuai role
+        const schema = isAdmin ? validateUserAdmin : validateUser;
+        const { error: userError } = schema.validate(req.body);
 
         if (userIdError || userError) {
             return res.status(400).json({
@@ -108,7 +112,8 @@ const updateUser = async (req, res) => {
             });
         }
 
-        const user = await userService.updateUser(+req.params.id, req.body);
+        const user = await userService.updateUser(+req.params.id, req.body, isAdmin);
+
         res.status(200).json({
             success: true,
             message: 'Berhasil memperbarui user',
@@ -122,6 +127,8 @@ const updateUser = async (req, res) => {
         });
     }
 };
+
+
 
 const deleteUser = async (req, res) => {
     try {
