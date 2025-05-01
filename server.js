@@ -6,9 +6,7 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 const router = require('./routes/routes');
-const path = require('path');
 
-// Serve static files from uploads folder
 app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());

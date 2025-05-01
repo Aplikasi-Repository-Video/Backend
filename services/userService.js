@@ -4,6 +4,12 @@ const bcrypt = require('bcryptjs');
 const SALT = +process.env.SALT;
 
 const createUser = async (user) => {
+    const userExist = await getUserByEmail(user.email);
+
+    if (userExist) {
+        throw new Error('Email sudah digunakan');
+    }
+
     const data = {
         name: user.name,
         email: user.email,
@@ -33,7 +39,7 @@ const getUserById = async (id) => {
     });
 
     if (!user) {
-        throw new Error('User not found');
+        throw new Error('Pengguna tidak ditemukan');
     }
 
     return user;
@@ -46,43 +52,58 @@ const getUserByEmail = async (email) => {
         },
     });
 
-    if (!user) {
-        throw new Error('User not found');
-    }
-
     return user;
 };
 
-const updateUser = async (id, user) => {
-    const userExist = await getUserById(id);
+const updateUser = async (id, user, isAdmin) => {
+    if (isAdmin) {
+        const { role, isActive } = user;
 
-    if (!userExist) {
-        throw new Error('User not found');
+        if (role && !['USER', 'ADMIN'].includes(role)) {
+            throw new Error('Role tidak valid');
+        }
+
+        if (isActive !== undefined && typeof isActive !== 'boolean') {
+            throw new Error('Status isActive harus boolean');
+        }
     }
+
+    await getUserById(id);
+
+    if (user.email) {
+        const userEmailExist = await getUserByEmail(user.email);
+        if (userEmailExist && userEmailExist.id !== id) {
+            throw new Error('Email telah digunakan');
+        }
+    }
+
+
     const data = {
         name: user.name,
         email: user.email,
-        password: bcrypt.hashSync(user.password, SALT),
-        updated: new Date()
+        password: user.password ? bcrypt.hashSync(user.password, SALT) : undefined,
+        updated: new Date(),
+        ...(isAdmin && { role: user.role, isActive: user.isActive })
     };
 
+    Object.keys(data).forEach((key) => data[key] === undefined && delete data[key]);
+
     const updatedUser = await prisma.user.update({
-        where: {
-            id: id,
-        },
-        data: data,
+        where: { id },
+        data,
     });
 
     const { password, ...userWithoutPassword } = updatedUser;
-
     return userWithoutPassword;
 };
+
+
 
 const deleteUser = async (id) => {
     const userExist = await getUserById(id);
 
     if (!userExist) {
-        throw new Error('User not found');
+        throw new Error('Pengguna tidak ditemukan');
     }
 
     const deletedUser = await prisma.user.update({

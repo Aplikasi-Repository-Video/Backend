@@ -7,16 +7,30 @@ cloudinary.config({
     api_secret: process.env.API_SECRET
 });
 
-exports = deleteFromCloudinary = async (url) => {
-    if (!url) return;
+const deleteFromCloudinary = async (fileUrl) => {
+    if (!fileUrl) return;
 
-    const publicId = url.split('/').pop().split('.')[0];
+    // Ekstrak bagian setelah '/upload/' lalu hapus ekstensi
+    const parts = fileUrl.split('/upload/');
+    if (parts.length < 2) return;
+
+    const pathWithExtension = parts[1].replace(/^v\d+\//, ''); // remove version prefix
+    const publicId = pathWithExtension.split('.')[0]; // remove file extension
+
+    const isVideo = fileUrl.includes('/video/');
+    const resourceType = isVideo ? 'video' : 'image';
 
     try {
-        await cloudinary.uploader.destroy(publicId);
+        const result = await cloudinary.uploader.destroy(publicId, {
+            resource_type: resourceType
+        });
+        console.log(`[Cloudinary] File ${publicId} deleted, result:`, result);
     } catch (error) {
-        console.log(error);
+        console.error('[Cloudinary] Gagal menghapus file:', error);
     }
-}
+};
 
-module.exports = cloudinary
+module.exports = {
+    cloudinary,
+    deleteFromCloudinary
+}

@@ -1,12 +1,17 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const uploadFromBuffer = require('../utils/uploadFromBuffer');
-const upload = require('../middleware/upload');
-const { deleteFromCloudinary } = require('../utils/cloudinary'); // kamu buat ini sendiri
+const { deleteFromCloudinary } = require('../utils/cloudinary');
+const fs = require('fs/promises');
+const path = require('path');
+const uploadFromPath = require('../utils/uploadFromPath');
+const { vi } = require('@faker-js/faker');
+
 
 
 const getAllVideos = async () => {
-    return await prisma.video.findMany();
+    return await prisma.video.findMany({
+        take: 10
+    });
 }
 
 const getVideoById = async (id) => {
@@ -23,24 +28,19 @@ const getVideoById = async (id) => {
     return video;
 }
 
-function secondsToHMS(seconds) {
-    const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
-    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
-    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-    return `${h}:${m}:${s}`;
-}
-
 const createVideo = async ({ title, description, category_id, user_id, videoFile, thumbnailFile }) => {
-    const uploadedVideo = await uploadFromBuffer(videoFile.buffer, 'videos', 'video');
-    const uploadedThumbnail = await uploadFromBuffer(thumbnailFile.buffer, 'thumbnails', 'image');
+    const uploadedVideo = await uploadFromPath(videoFile.path, 'videos', 'video');
+    const uploadedThumbnail = await uploadFromPath(thumbnailFile.path, 'thumbnails', 'image');
 
-    const durationFormatted = secondsToHMS(uploadedVideo.duration);
+    await fs.unlink(videoFile.path);
+    await fs.unlink(thumbnailFile.path);
 
     const newVideo = await prisma.video.create({
         data: {
             title,
             description,
-            duration: durationFormatted,
+            searchable: `${title} ${description}`,
+            duration: uploadedVideo.duration,
             video_url: uploadedVideo.secure_url,
             thumbnail_url: uploadedThumbnail.secure_url,
             category_id: category_id ? parseInt(category_id) : null,
@@ -61,20 +61,20 @@ const updateVideo = async (id, { title, description, category_id, videoFile, thu
     let duration = existingVideo.duration;
 
     if (videoFile) {
-        const uploadedVideo = await uploadFromBuffer(videoFile.buffer, 'videos', 'video');
+        const uploadedVideo = await uploadFromPath(videoFile.path, 'videos', 'video');
+        await deleteFromCloudinary(existingVideo.video_url);
         video_url = uploadedVideo.secure_url;
-        function secondsToHMS(seconds) {
-            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
-            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
-            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-            return `${h}:${m}:${s}`;
-        }
-        duration = secondsToHMS(uploadedVideo.duration);
+        duration = uploadedVideo.duration;
+
+        await fs.unlink(videoFile?.path);
     }
 
     if (thumbnailFile) {
-        const uploadedThumbnail = await uploadFromBuffer(thumbnailFile.buffer, 'thumbnails', 'image');
+        const uploadedThumbnail = await uploadFromPath(thumbnailFile.path, 'thumbnails', 'image');
+        await deleteFromCloudinary(existingVideo.thumbnail_url);
         thumbnail_url = uploadedThumbnail.secure_url;
+
+        await fs.unlink(thumbnailFile?.path);
     }
 
     const updatedVideo = await prisma.video.update({
@@ -82,6 +82,7 @@ const updateVideo = async (id, { title, description, category_id, videoFile, thu
         data: {
             title,
             description,
+            searchable: `${title} ${description}`,
             duration,
             video_url,
             thumbnail_url,
@@ -90,21 +91,29 @@ const updateVideo = async (id, { title, description, category_id, videoFile, thu
         }
     });
 
+
     return updatedVideo;
 };
 
 const deleteVideo = async (id) => {
     const existingVideo = await getVideoById(id);
+    if (!existingVideo) {
+        throw new Error('Video tidak ditemukan');
+    }
 
-    await deleteFromCloudinary(existingVideo.video_url);
-    await deleteFromCloudinary(existingVideo.thumbnail_url);
+    try {
+        const deleteVideoPromise = deleteFromCloudinary(existingVideo.video_url);
+        const deleteThumbnailPromise = deleteFromCloudinary(existingVideo.thumbnail_url);
 
-    return await prisma.video.delete({
-        where: {
-            id: id
-        }
-    });
-}
+        await Promise.allSettled([deleteVideoPromise, deleteThumbnailPromise]);
+
+        return await prisma.video.delete({
+            where: { id }
+        });
+    } catch (error) {
+        throw new Error('Gagal menghapus video: ' + error.message);
+    }
+};
 
 module.exports = {
     getAllVideos,
