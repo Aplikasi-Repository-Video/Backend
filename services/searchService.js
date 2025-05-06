@@ -1,38 +1,64 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
+const elasticClient = require('../utils/elasticClient');
 
-const searchVideos = async (rawKeyword) => {
-  const keyword = rawKeyword.trim();
-  const normalized = keyword.replace(/[^a-zA-Z0-9\s]/g, '');
-  const ftsResult = await prisma.$queryRawUnsafe(`
-    SELECT *,
-      pgroonga_score(tableoid, ctid) AS score
-    FROM video
-    WHERE searchable &@~ pgroonga_normalize('${normalized}')
-    ORDER BY score DESC
-    LIMIT 100
-  `);
 
-  if (ftsResult.length > 0) return ftsResult;
+const searchInElasticSearch = async (query) => {
+  try {
+    const result = await elasticClient.search({
+      index: 'videos',
+      body: {
+        query: {
+          match: {
+            searchable: {
+              query: query,
+              fuzziness: 'AUTO'
+            }
+          }
+        }
+      }
+    });
 
-  const words = normalized.split(/\s+/);
-  const fallbackResult = await prisma.$queryRawUnsafe(`
-    SELECT *,
-      pgroonga_score(tableoid, ctid) AS score,
-      (${words.map(w =>
-    `(CASE WHEN searchable &~ pgroonga_normalize('${w}') THEN 1 ELSE 0 END)`
-  ).join(' + ')}) AS match_count
-    FROM video
-    WHERE ${words.map(w =>
-    `searchable &~ pgroonga_normalize('${w}')`
-  ).join(' OR ')}
-    ORDER BY match_count DESC, score DESC
-    LIMIT 100
-  `);
+    if (!result || !result.hits || !result.hits.hits) {
+      throw new Error('Tidak ada hasil yang ditemukan dari pencarian Elasticsearch');
+    }
 
-  return fallbackResult;
+    return result.hits.hits.map(hit => ({
+      id: hit._source.id,
+      score: hit._score
+    }));
+  } catch (error) {
+    console.error('Error saat mencari di Elasticsearch:', error.message);
+    throw error;
+  }
 };
 
-module.exports = {
-  searchVideos,
+const searchVideos = async (query) => {
+  try {
+    const searchHits = await searchInElasticSearch(query);
+    const ids = searchHits.map(hit => hit.id);
+
+    const videos = await prisma.video.findMany({
+      where: { id: { in: ids } },
+      include: {
+        _count: { select: { Like: true, Comment: true } }
+      }
+    });
+
+    const videoMap = videos.reduce((map, video) => {
+      map[video.id] = video;
+      return map;
+    }, {});
+
+    const results = searchHits
+      .map(hit => ({ ...videoMap[hit.id], score: hit.score }))
+      .filter(Boolean);
+
+    return results;
+
+  } catch (error) {
+    console.error('Gagal mencari video:', error.message);
+    return [];
+  }
 };
+
+module.exports = { searchVideos };

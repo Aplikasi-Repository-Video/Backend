@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 
 const createComment = async ({ content, user_id, video_id }) => {
     return await prisma.comment.create({
