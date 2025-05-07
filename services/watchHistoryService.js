@@ -57,10 +57,12 @@ const updateWatchHistory = async (id, watchHistory) => {
 };
 
 const deleteWatchHistory = async (id) => {
-    await getWatchHistoryById(id);
+    const existingWatchHistory = await getWatchHistoryById(id);
 
     const result = await prisma.watchHistory.delete({
-        where: { id }
+        where: {
+            id: existingWatchHistory.id
+        }
     });
 
     return result;

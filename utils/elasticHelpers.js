@@ -1,4 +1,4 @@
-const elasticClient = require('./elasticClient');
+const { elasticClient } = require('./elasticClient');
 
 const syncVideoIndex = async (video) => {
     try {
@@ -10,7 +10,6 @@ const syncVideoIndex = async (video) => {
                 searchable: `${video.title} ${video.description}`,
             }
         });
-        console.log('Indexed video:', video.id);
     } catch (error) {
         console.error('Elasticsearch sync error:', error.message);
     }
@@ -22,7 +21,6 @@ const deleteVideoIndex = async (id) => {
             index: 'videos',
             id: id,
         });
-        console.log('Deleted video index:', id);
     } catch (error) {
         if (error.meta && error.meta.statusCode === 404) {
             console.warn('Index not found for deletion:', id);

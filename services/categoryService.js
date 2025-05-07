@@ -1,45 +1,35 @@
 const prisma = require('../prisma/client');
 
-const getAllCategories = async () => {
-    return await prisma.category.findMany();
+const getAllCategories = () => {
+    return prisma.category.findMany();
 };
 
-const getCategoryById = async (id) => {
-    return await prisma.category.findUnique({
-        where: {
-            id: id,
-        },
-    });
+const getCategoryById = (id) => {
+    return prisma.category.findUnique({ where: { id } });
 };
 
-const createCategory = async (category) => {
-    return await prisma.category.create({
+const createCategory = ({ name }) => {
+    return prisma.category.create({
         data: {
-            name: category.name,
+            name,
             created: new Date(),
             updated: new Date(),
-        }
+        },
     });
 };
 
-const updateCategory = async (id, category) => {
-    return await prisma.category.update({
-        where: {
-            id: id,
-        },
+const updateCategory = (id, { name }) => {
+    return prisma.category.update({
+        where: { id },
         data: {
-            name: category.name,
+            name,
             updated: new Date(),
         },
     });
 };
 
-const deleteCategory = async (id) => {
-    return await prisma.category.delete({
-        where: {
-            id: id,
-        },
-    });
+const deleteCategory = (id) => {
+    return prisma.category.delete({ where: { id } });
 };
 
 module.exports = {
@@ -47,5 +37,5 @@ module.exports = {
     getCategoryById,
     createCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
 };

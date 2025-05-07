@@ -1,6 +1,5 @@
 const prisma = require('../prisma/client');
-const elasticClient = require('../utils/elasticClient');
-
+const { elasticClient } = require('../utils/elasticClient');
 
 const searchInElasticSearch = async (query) => {
   try {

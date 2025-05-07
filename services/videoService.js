@@ -101,9 +101,9 @@ const updateVideo = async (id, { title, description, category_id, videoFile, thu
     const updatedVideo = await prisma.video.update({
         where: { id },
         data: {
-            title,
-            description,
-            searchable: `${title} ${description}`,
+            title: title || existingVideo.title,
+            description: description || existingVideo.description,
+            searchable: `${title || existingVideo.title} ${description || existingVideo.description}`,
             duration,
             video_url,
             thumbnail_url,

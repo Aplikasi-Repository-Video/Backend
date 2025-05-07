@@ -2,6 +2,32 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const bcrypt = require('bcryptjs');
 const SALT = +process.env.SALT;
+const { elasticClient } = require('../utils/elasticClient');
+const { syncVideoIndex, deleteVideoIndex } = require('../utils/elasticHelpers');
+
+const createVideoIndex = async () => {
+    try {
+        const indexExists = await elasticClient.indices.exists({ index: 'videos' });
+        if (!indexExists) {
+            await elasticClient.indices.create({
+                index: 'videos',
+                body: {
+                    mappings: {
+                        properties: {
+                            id: { type: 'integer' },
+                            searchable: {
+                                type: 'text',
+                                analyzer: 'standard'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error creating index:', error);
+    }
+};
 
 async function main() {
     // Hapus data lama terlebih dahulu
@@ -11,7 +37,8 @@ async function main() {
     await prisma.video.deleteMany();
     await prisma.user.deleteMany();
     await prisma.category.deleteMany();
-
+    await elasticClient.indices.delete({ index: 'videos' });
+    await createVideoIndex();
     console.log('Data berhasil dihapus');
 
     // reset auto increment
@@ -92,8 +119,8 @@ async function main() {
                 title,
                 description,
                 duration: Math.floor(Math.random() * 100),
-                video_url: `https://res.cloudinary.com/dr2nxslaq/video/upload/v1744656550/videos/ahwsabsnod1gbt6oops1.mp4`,
-                thumbnail_url: `https://res.cloudinary.com/dr2nxslaq/image/upload/v1744656552/thumbnails/l6az5r6oi2maxkh7tjvk.jpg`,
+                video_url: `https://res.cloudinary.com/dr2nxslaq/video/upload/v1746009105/Belajar_NodeJS___1._Apa_Itu_NodeJS__cznp7x.mp4`,
+                thumbnail_url: `https://res.cloudinary.com/dr2nxslaq/image/upload/v1746008736/sSLJx5t4OJ4hd_wi1tbe.jpg`,
                 created: new Date(),
                 updated: new Date(),
                 category_id: categories[i % categories.length].id,
@@ -101,6 +128,8 @@ async function main() {
                 searchable: `${title} ${description}`,
             },
         });
+
+        await syncVideoIndex(video);
 
         videos.push(video);
     }

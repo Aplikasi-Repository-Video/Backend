@@ -1,7 +1,7 @@
 const commentService = require('../services/commentService');
 const { validateComment, validateCommentId, validateCommentVideoId } = require('../validations/commentValidation');
 
-const createComment = async (req, res) => {
+const createComment = async (req, res, next) => {
     try {
         const { error } = validateComment(req.body);
         if (error) return res.status(400).json({
@@ -16,15 +16,11 @@ const createComment = async (req, res) => {
             data: comment
         });
     } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: 'Terjadi kesalahan saat membuat komentar',
-            error: err.message
-        });
+        next(err);
     }
 };
 
-const getComments = async (req, res) => {
+const getComments = async (req, res, next) => {
     try {
         const { error } = validateCommentVideoId(req.params);
         if (error) return res.status(400).json({
@@ -39,15 +35,11 @@ const getComments = async (req, res) => {
             data: comments
         });
     } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: 'Terjadi kesalahan saat mengambil komentar',
-            error: err.message
-        });
+        next(err);
     }
 };
 
-const deleteComment = async (req, res) => {
+const deleteComment = async (req, res, next) => {
     try {
         const { error } = validateCommentId(req.params);
         if (error) return res.status(400).json({
@@ -62,11 +54,7 @@ const deleteComment = async (req, res) => {
             data: comment
         });
     } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: 'Terjadi kesalahan saat menghapus komentar',
-            error: err.message
-        });
+        next(err);
     }
 };
 
