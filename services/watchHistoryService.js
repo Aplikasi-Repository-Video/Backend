@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 const assignUserIdentity = require('../utils/assignUserIdentity'); // sesuaikan path-nya
 const { de } = require('@faker-js/faker');
 
@@ -58,10 +57,12 @@ const updateWatchHistory = async (id, watchHistory) => {
 };
 
 const deleteWatchHistory = async (id) => {
-    await getWatchHistoryById(id);
+    const existingWatchHistory = await getWatchHistoryById(id);
 
     const result = await prisma.watchHistory.delete({
-        where: { id }
+        where: {
+            id: existingWatchHistory.id
+        }
     });
 
     return result;

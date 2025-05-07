@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 
 const toggleLike = async ({ user_id, video_id }) => {
     const existingLike = await prisma.like.findFirst({

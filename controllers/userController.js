@@ -101,7 +101,6 @@ const updateUser = async (req, res) => {
         const { error: userIdError } = validateUserId.validate(req.params);
         const isAdmin = req.user.role === 'ADMIN';
 
-        // Pilih skema validasi sesuai role
         const schema = isAdmin ? validateUserAdmin : validateUser;
         const { error: userError } = schema.validate(req.body);
 
