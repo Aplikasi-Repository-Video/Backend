@@ -43,6 +43,7 @@ const routeConfigs = [
     { method: 'delete', path: '/videos/:id', controller: videoController.deleteVideo, middlewares: ['auth', 'admin'] },
     { method: 'get', path: '/videos', controller: videoController.getAllVideos, middlewares: [] },
     { method: 'get', path: '/videos/:id', controller: videoController.getVideoById, middlewares: [] },
+    { method: 'get', path: '/videos/category/:categoryId', controller: videoController.getVideosByCategory, middlewares: [] },
 
     // Comments
     { method: 'post', path: '/comments', controller: commentController.createComment, middlewares: ['auth', 'user'] },
@@ -51,6 +52,7 @@ const routeConfigs = [
 
     // Likes
     { method: 'post', path: '/likes', controller: likeController.toggleLike, middlewares: ['auth', 'user'] },
+    { method: 'get', path: '/likes/user', controller: likeController.getLikesByUserId, middlewares: ['auth', 'user'] },
     { method: 'get', path: '/likes/:videoId', controller: likeController.getLikes, middlewares: [] },
 
     // Watch History

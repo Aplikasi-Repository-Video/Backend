@@ -45,6 +45,23 @@ const getVideoById = async (req, res) => {
     }
 };
 
+const getVideosByCategory = async (req, res) => {
+    try {
+        const videos = await videoService.getVideosByCategory(+req.params.categoryId);
+        res.status(200).json({
+            success: true,
+            message: 'Berhasil mendapatkan video',
+            data: videos
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mendapatkan video',
+            error: error.message
+        });
+    }
+}
+
 const createVideo = async (req, res) => {
     try {
         const { error } = validateVideo.validate(req.body);
@@ -165,5 +182,6 @@ module.exports = {
     updateVideo,
     getAllVideos,
     getVideoById,
+    getVideosByCategory,
     deleteVideo
 };

@@ -44,6 +44,29 @@ const getVideoById = async (id) => {
     return video;
 }
 
+const getVideosByCategory = async (id) => {
+    const videos = await prisma.video.findMany({
+        where: {
+            category_id: id
+        },
+        include: {
+            _count: {
+                select: {
+                    Like: true,
+                    Comment: true
+                }
+            }
+        },
+        orderBy: {
+            Like: {
+                _count: 'desc'
+            }
+        }
+    });
+
+    return videos;
+}
+
 const createVideo = async ({ title, description, category_id, user_id, videoFile, thumbnailFile }) => {
     const uploadedVideo = await uploadFromPath(videoFile.path, 'videos', 'video');
     const uploadedThumbnail = await uploadFromPath(thumbnailFile.path, 'thumbnails', 'image');
@@ -152,6 +175,7 @@ const deleteVideo = async (id) => {
 module.exports = {
     getAllVideos,
     getVideoById,
+    getVideosByCategory,
     createVideo,
     updateVideo,
     deleteVideo

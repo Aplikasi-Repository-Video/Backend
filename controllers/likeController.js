@@ -47,7 +47,28 @@ const getLikes = async (req, res) => {
     }
 }
 
+const getLikesByUserId = async (req, res) => {
+    try {
+        console.log(req.user.id);
+        const likes = await likeService.getLikesByUserId(+req.user.id);
+        res.status(200).json({
+            success: true,
+            message: 'Success get likes',
+            data: likes
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil like',
+            error: error.message
+        });
+    }
+}
+
+
+
 module.exports = {
     getLikes,
-    toggleLike
+    toggleLike,
+    getLikesByUserId
 }

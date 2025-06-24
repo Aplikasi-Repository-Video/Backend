@@ -44,7 +44,18 @@ const getLikesByVideoId = async (video_id) => {
     return { likes, total };
 };
 
+const getLikesByUserId = async (user_id) => {
+    const likes = await prisma.like.findMany({
+        where: { user_id },
+        include: {
+            Video: true
+        }
+    });
+    return likes;
+}
+
 module.exports = {
     getLikesByVideoId,
-    toggleLike
+    toggleLike,
+    getLikesByUserId
 };
