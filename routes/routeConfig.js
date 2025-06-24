@@ -43,6 +43,7 @@ const routeConfigs = [
     { method: 'delete', path: '/videos/:id', controller: videoController.deleteVideo, middlewares: ['auth', 'admin'] },
     { method: 'get', path: '/videos', controller: videoController.getAllVideos, middlewares: [] },
     { method: 'get', path: '/videos/:id', controller: videoController.getVideoById, middlewares: [] },
+    { method: 'get', path: '/videos/category/:categoryId', controller: videoController.getVideosByCategory, middlewares: [] },
 
     // Comments
     { method: 'post', path: '/comments', controller: commentController.createComment, middlewares: ['auth', 'user'] },
