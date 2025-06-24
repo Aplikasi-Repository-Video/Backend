@@ -15,24 +15,41 @@ const elasticClient = new Client({
 const createVideoIndex = async () => {
     const indexExists = await elasticClient.indices.exists({ index: 'videos' });
 
-    if (!indexExists) {
-        await elasticClient.indices.create({
-            index: 'videos',
-            body: {
-                mappings: {
-                    properties: {
-                        id: { type: 'integer' },
-                        title: { type: 'text' },
-                        description: { type: 'text' },
-                        searchable: { type: 'text' },
+    if (indexExists) {
+        console.log('Index "videos" sudah ada, menghapus...');
+        await elasticClient.indices.delete({ index: 'videos' });
+        console.log('Index "videos" berhasil dihapus.');
+    }
+
+    await elasticClient.indices.create({
+        index: 'videos',
+        body: {
+            settings: {
+                analysis: {
+                    analyzer: {
+                        custom_search_analyzer: {
+                            type: 'custom',
+                            tokenizer: 'standard',
+                            filter: ['lowercase', 'asciifolding'],
+                        },
                     },
                 },
             },
-        });
-        console.log('Index "videos" dibuat');
-    } else {
-        console.log('Index "videos" sudah ada');
-    }
+            mappings: {
+                properties: {
+                    id: { type: 'integer' },
+                    title: { type: 'text' },
+                    description: { type: 'text' },
+                    searchable: {
+                        type: 'text',
+                        analyzer: 'custom_search_analyzer',
+                    },
+                },
+            },
+        },
+    });
+
+    console.log('Index "videos" berhasil dibuat dengan custom analyzer');
 };
 
 const indexAllVideos = async () => {
@@ -53,7 +70,7 @@ const indexAllVideos = async () => {
                 id: video.id,
                 title: video.title,
                 description: video.description,
-                searchable: `${video.title} ${video.description}`,
+                searchable: `${video.title} ${video.description}`.toLowerCase(), // optional normalize
             },
         ]);
 
