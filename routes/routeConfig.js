@@ -52,6 +52,7 @@ const routeConfigs = [
 
     // Likes
     { method: 'post', path: '/likes', controller: likeController.toggleLike, middlewares: ['auth', 'user'] },
+    { method: 'get', path: '/likes/user', controller: likeController.getLikesByUserId, middlewares: ['auth', 'user'] },
     { method: 'get', path: '/likes/:videoId', controller: likeController.getLikes, middlewares: [] },
 
     // Watch History
