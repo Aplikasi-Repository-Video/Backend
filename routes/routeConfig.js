@@ -47,6 +47,7 @@ const routeConfigs = [
 
     // Comments
     { method: 'post', path: '/comments', controller: commentController.createComment, middlewares: ['auth', 'user'] },
+    { method: 'get', path: '/comments', controller: commentController.getAllComments, middlewares: ['auth', 'admin'] },
     { method: 'get', path: '/comments/:videoId', controller: commentController.getComments, middlewares: [] },
     { method: 'delete', path: '/comments/:id', controller: commentController.deleteComment, middlewares: ['auth', 'user'] },
 

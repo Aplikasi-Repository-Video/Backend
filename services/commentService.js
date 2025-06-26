@@ -17,6 +17,31 @@ const createComment = async ({ content, user_id, video_id }) => {
     }
 };
 
+const getAllComments = async () => {
+    try {
+        return await prisma.comment.findMany({
+            include: {
+                User: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                Video: {
+                    select: {
+                        id: true,
+                        title: true
+                    }
+                }
+            },
+            orderBy: { created: 'desc' },
+        });
+    } catch (error) {
+        throw error;
+    }
+};
+
 const getCommentsByVideoId = async (video_id) => {
     try {
         const comments = await prisma.comment.findMany({
@@ -57,5 +82,6 @@ const deleteComment = async (id) => {
 module.exports = {
     createComment,
     getCommentsByVideoId,
+    getAllComments,
     deleteComment
 };
