@@ -9,7 +9,7 @@ const authController = require('../controllers/authController');
 const upload = require('../middleware/upload');
 
 const routeConfigs = [
-    { method: 'get', path: '/', controller: (req, res) => res.json({ message: 'Hello World' }), middlewares: [] },
+    { method: 'get', path: '/', controller: (req, res) => res.json({ message: 'Hello...' }), middlewares: [] },
     { method: 'post', path: '/login', controller: authController.login, middlewares: [] },
     { method: 'post', path: '/register', controller: userController.createUser, middlewares: [] },
 
