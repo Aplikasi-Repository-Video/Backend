@@ -1,5 +1,6 @@
 # Keep environment variables out of version control
 .env
 node_modules
-note.md
-routes__.js
+videoservicelocal.js
+app-video.pem
+github-ci-key
