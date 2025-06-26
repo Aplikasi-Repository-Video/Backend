@@ -20,6 +20,19 @@ const createComment = async (req, res, next) => {
     }
 };
 
+const getAllComments = async (req, res, next) => {
+    try {
+        const comments = await commentService.getAllComments();
+        res.status(200).json({
+            success: true,
+            message: 'Berhasil mendapatkan semua komentar',
+            data: comments
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
 const getComments = async (req, res, next) => {
     try {
         const { error } = validateCommentVideoId(req.params);
@@ -59,6 +72,7 @@ const deleteComment = async (req, res, next) => {
 };
 
 module.exports = {
+    getAllComments,
     createComment,
     deleteComment,
     getComments
