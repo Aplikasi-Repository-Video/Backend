@@ -26,7 +26,17 @@ const getVideoById = async (id) => {
     const video = await prisma.video.findUnique({
         where: { id },
         include: {
-            Comment: true,
+            Comment: {
+                include: {
+                    User: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true
+                        }
+                    }
+                }
+            },
             Like: true
         }
     });
