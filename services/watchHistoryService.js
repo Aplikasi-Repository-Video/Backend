@@ -1,20 +1,29 @@
 const prisma = require('../prisma/client');
-const assignUserIdentity = require('../utils/assignUserIdentity'); // sesuaikan path-nya
-const { de } = require('@faker-js/faker');
+const { assignUserIdentity, getWatchHistorySelector } = require('../utils/assignUserIdentity'); // sesuaikan path-nya
 
 const createWatchHistory = async (watchHistory) => {
-    let data = {
-        video_id: +watchHistory.video_id,
-        duration_watch: +watchHistory.duration_watch,
+    const baseData = {
+        video_id: Number(watchHistory.video_id),
+        duration_watch: Number(watchHistory.duration_watch),
         created: new Date(),
         updated: new Date()
     };
 
-    data = assignUserIdentity(watchHistory, data);
+    const identity = assignUserIdentity(watchHistory);
+    const where = getWatchHistorySelector(watchHistory);
 
-    const result = await prisma.watchHistory.create({ data });
+    const result = await prisma.watchHistory.upsert({
+        where,
+        create: { ...baseData, ...identity },
+        update: {
+            duration_watch: baseData.duration_watch,
+            updated: new Date()
+        }
+    });
+
     return result;
-}
+};
+
 
 const getAllWatchHistory = async (watchHistory) => {
     let where = {};
