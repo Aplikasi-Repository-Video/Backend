@@ -62,8 +62,6 @@ async function main() {
         categories.push(category);
     }
 
-    // Seed Users
-
     const users = [];
     for (let i = 1; i <= 10; i++) {
         const user = await prisma.user.create({
@@ -119,8 +117,8 @@ async function main() {
                 title,
                 description,
                 duration: Math.floor(Math.random() * 100),
-                video_url: `https://res.cloudinary.com/dr2nxslaq/video/upload/v1746009105/Belajar_NodeJS___1._Apa_Itu_NodeJS__cznp7x.mp4`,
-                thumbnail_url: `https://res.cloudinary.com/dr2nxslaq/image/upload/v1746008736/sSLJx5t4OJ4hd_wi1tbe.jpg`,
+                video_url: `https://res.cloudinary.com/dr2nxslaq/video/upload/v1751276030/Belajar_NodeJS___1._Apa_Itu_NodeJS__wbd3zk.mp4`,
+                thumbnail_url: `https://res.cloudinary.com/dr2nxslaq/image/upload/v1751018976/69ae8f1f3ba48a8fe208b394b450f6cb_io5hfd.jpg`,
                 created: new Date(),
                 updated: new Date(),
                 category_id: categories[i % categories.length].id,
@@ -137,31 +135,37 @@ async function main() {
 
     // Seed Comments
     const comments = [];
-    for (let i = 1; i <= 10; i++) {
-        const comment = await prisma.comment.create({
-            data: {
-                content: `Comment ${i}`,
-                created: new Date(),
-                updated: new Date(),
-                user_id: users[i % users.length].id,
-                video_id: videos[i % videos.length].id,
-            },
-        });
-        comments.push(comment);
+    for (const video of videos) {
+        for (let i = 0; i < 10; i++) {
+            const user = users[(video.id + i) % users.length];
+            const comment = await prisma.comment.create({
+                data: {
+                    content: `Comment ${i + 1} for video ${video.id}`,
+                    created: new Date(),
+                    updated: new Date(),
+                    user_id: user.id,
+                    video_id: video.id,
+                },
+            });
+            comments.push(comment);
+        }
     }
 
     // Seed Likes
     const likes = [];
-    for (let i = 1; i <= 10; i++) {
-        const like = await prisma.like.create({
-            data: {
-                created: new Date(),
-                updated: new Date(),
-                user_id: users[i % users.length].id,
-                video_id: videos[i % videos.length].id,
-            },
-        });
-        likes.push(like);
+    for (const video of videos) {
+        for (let i = 0; i < 10; i++) {
+            const user = users[(video.id + i) % users.length];
+            const like = await prisma.like.create({
+                data: {
+                    created: new Date(),
+                    updated: new Date(),
+                    user_id: user.id,
+                    video_id: video.id,
+                },
+            });
+            likes.push(like);
+        }
     }
 
     // Seed Watch History
