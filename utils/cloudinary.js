@@ -10,17 +10,17 @@ cloudinary.config({
 const deleteFromCloudinary = async (fileUrl) => {
     if (!fileUrl) return;
 
-    // Ekstrak bagian setelah '/upload/' lalu hapus ekstensi
     const parts = fileUrl.split('/upload/');
     if (parts.length < 2) return;
 
-    const pathWithExtension = parts[1].replace(/^v\d+\//, ''); // remove version prefix
-    const publicId = pathWithExtension.split('.')[0]; // remove file extension
+    const pathWithExtension = parts[1].replace(/^v\d+\//, '');
+    const publicId = pathWithExtension.replace(/\.[^/.]+$/, '');
 
     const isVideo = fileUrl.includes('/video/');
     const resourceType = isVideo ? 'video' : 'image';
 
     try {
+        console.log('[Cloudinary] Public ID to delete:', publicId);
         const result = await cloudinary.uploader.destroy(publicId, {
             resource_type: resourceType
         });
@@ -29,6 +29,7 @@ const deleteFromCloudinary = async (fileUrl) => {
         console.error('[Cloudinary] Gagal menghapus file:', error);
     }
 };
+
 
 module.exports = {
     cloudinary,

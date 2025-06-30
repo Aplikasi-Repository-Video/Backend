@@ -6,7 +6,6 @@ const likeController = require('../controllers/likeController');
 const watchHistoryController = require('../controllers/watchHistoryController');
 const searchController = require('../controllers/searchController');
 const authController = require('../controllers/authController');
-const upload = require('../middleware/upload');
 
 const routeConfigs = [
     { method: 'get', path: '/', controller: (req, res) => res.json({ message: 'Hello... World...' }), middlewares: [] },
@@ -32,13 +31,13 @@ const routeConfigs = [
         method: 'post',
         path: '/videos',
         controller: videoController.createVideo,
-        middlewares: [upload.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]), 'auth', 'admin']
+        middlewares: ['auth', 'admin']
     },
     {
         method: 'put',
         path: '/videos/:id',
         controller: videoController.updateVideo,
-        middlewares: [upload.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]), 'auth', 'admin']
+        middlewares: ['auth', 'admin']
     },
     { method: 'delete', path: '/videos/:id', controller: videoController.deleteVideo, middlewares: ['auth', 'admin'] },
     { method: 'get', path: '/videos', controller: videoController.getAllVideos, middlewares: [] },

@@ -1,7 +1,5 @@
 const videoService = require('../services/videoService');
 const { validateVideo, validateVideoId, validateVideoUpdate } = require('../validations/videoValidation');
-const fs = require('fs/promises');
-
 
 const getAllVideos = async (req, res) => {
     try {
@@ -72,23 +70,14 @@ const createVideo = async (req, res) => {
             });
         }
 
-        const videoFile = req.files['video']?.[0];
-        const thumbnailFile = req.files['thumbnail']?.[0];
-
-        if (!videoFile || !thumbnailFile) {
-            return res.status(400).json({
-                success: false,
-                message: 'Video atau thumbnail tidak ditemukan'
-            });
-        }
-
         const video = await videoService.createVideo({
             title: req.body.title,
             description: req.body.description,
             category_id: req.body.category_id,
             user_id: req.body.user_id,
-            videoFile,
-            thumbnailFile
+            video_url: req.body.video_url,
+            thumbnail_url: req.body.thumbnail_url,
+            duration: req.body.duration
         });
 
         return res.status(201).json({
@@ -121,15 +110,13 @@ const updateVideo = async (req, res) => {
             });
         }
 
-        const videoFile = req.files?.['video']?.[0];
-        const thumbnailFile = req.files?.['thumbnail']?.[0];
-
         const updated = await videoService.updateVideo(+req.params.id, {
             title: req.body.title,
             description: req.body.description,
             category_id: req.body.category_id,
-            videoFile,
-            thumbnailFile
+            new_video_url: req.body.video_url,
+            new_thumbnail_url: req.body.thumbnail_url,
+            new_duration: req.body.duration
         });
 
         return res.status(200).json({

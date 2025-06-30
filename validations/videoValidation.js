@@ -23,6 +23,22 @@ const validateVideo = Joi.object({
         'number.empty': 'ID kategori tidak boleh kosong.',
         'any.required': 'ID kategori wajib diisi.',
     }),
+    video_url: Joi.string().required().messages({
+        'string.base': 'URL video harus berupa teks.',
+        'string.empty': 'URL video tidak boleh kosong.',
+        'any.required': 'URL video wajib diisi.',
+    }),
+    thumbnail_url: Joi.string().required().messages({
+        'string.base': 'URL thumbnail harus berupa teks.',
+        'string.empty': 'URL thumbnail tidak boleh kosong.',
+        'any.required': 'URL thumbnail wajib diisi.',
+    }),
+    duration: Joi.number().min(1).required().messages({
+        'number.base': 'Durasi harus berupa angka.',
+        'number.empty': 'Durasi tidak boleh kosong.',
+        'number.min': 'Durasi harus memiliki minimal 1 detik.',
+        'any.required': 'Durasi wajib diisi.',
+    }),
 })
 
 const validateVideoId = Joi.object({
@@ -48,6 +64,19 @@ const validateVideoUpdate = Joi.object({
         'number.base': 'ID kategori harus berupa angka.',
         'number.empty': 'ID kategori tidak boleh kosong.',
         'any.required': 'ID kategori wajib diisi.',
+    }),
+    video_url: Joi.string().messages({
+        'string.base': 'URL video harus berupa teks.',
+        'string.empty': 'URL video tidak boleh kosong.',
+    }),
+    thumbnail_url: Joi.string().messages({
+        'string.base': 'URL thumbnail harus berupa teks.',
+        'string.empty': 'URL thumbnail tidak boleh kosong.',
+    }),
+    duration: Joi.number().min(1).messages({
+        'number.base': 'Durasi harus berupa angka.',
+        'number.empty': 'Durasi tidak boleh kosong.',
+        'number.min': 'Durasi harus memiliki minimal 1 detik.',
     }),
 })
 

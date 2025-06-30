@@ -1,7 +1,5 @@
 const prisma = require('../prisma/client');
 const { deleteFromCloudinary } = require('../utils/cloudinary');
-const fs = require('fs/promises');
-const uploadFromPath = require('../utils/uploadFromPath');
 const { syncVideoIndex, deleteVideoIndex } = require('../utils/elasticHelpers');
 
 const getAllVideos = async () => {
@@ -64,19 +62,8 @@ const getVideosByCategory = async (id) => {
     });
 };
 
-const createVideo = async ({ title, description, category_id, user_id, videoFile, thumbnailFile }) => {
-    let uploadedVideo = null;
-    let uploadedThumbnail = null;
-
+const createVideo = async ({ title, description, category_id, user_id, video_url, thumbnail_url, duration }) => {
     try {
-        uploadedVideo = await uploadFromPath(videoFile.path, 'videos', 'video');
-        uploadedThumbnail = await uploadFromPath(thumbnailFile.path, 'thumbnails', 'image');
-
-        await Promise.allSettled([
-            fs.unlink(videoFile.path),
-            fs.unlink(thumbnailFile.path)
-        ]);
-
         const now = new Date();
 
         const newVideo = await prisma.video.create({
@@ -84,121 +71,128 @@ const createVideo = async ({ title, description, category_id, user_id, videoFile
                 title,
                 description,
                 searchable: `${title} ${description}`,
-                duration: uploadedVideo.duration,
-                video_url: uploadedVideo.secure_url,
-                thumbnail_url: uploadedThumbnail.secure_url,
+                duration: duration ?? 0, // default jika tidak ada durasi
+                video_url,
+                thumbnail_url,
                 category_id: category_id ? parseInt(category_id) : null,
                 user_id: parseInt(user_id),
                 created: now,
-                updated: now
-            }
+                updated: now,
+            },
         });
 
+        // Sinkronisasi ke Elasticsearch
         try {
             await syncVideoIndex(newVideo);
         } catch (syncErr) {
-            console.warn('Gagal sync Elasticsearch:', syncErr);
+            console.warn('Gagal sync Elasticsearch:', syncErr?.message || syncErr);
+            // optional: bisa log ke monitoring service di sini
         }
 
         return newVideo;
 
     } catch (error) {
-        console.error('Gagal membuat video:', error);
-
-        await Promise.allSettled([
-            uploadedVideo?.secure_url && deleteFromCloudinary(uploadedVideo.secure_url),
-            uploadedThumbnail?.secure_url && deleteFromCloudinary(uploadedThumbnail.secure_url),
-            fs.unlink(videoFile.path).catch(() => { }),
-            fs.unlink(thumbnailFile.path).catch(() => { })
-        ]);
-
+        console.error('Gagal membuat video:', error?.message || error);
         throw new Error('Gagal menyimpan video, perubahan dibatalkan');
     }
 };
 
-const updateVideo = async (id, { title, description, category_id, videoFile, thumbnailFile }) => {
-    const existingVideo = await getVideoById(id);
-    let video_url = existingVideo.video_url;
-    let thumbnail_url = existingVideo.thumbnail_url;
-    let duration = existingVideo.duration;
 
+const updateVideo = async (
+    id,
+    { title, description, category_id, new_video_url, new_thumbnail_url, new_duration }
+) => {
     try {
-        if (videoFile) {
-            const uploaded = await uploadFromPath(videoFile.path, 'videos', 'video');
-            await Promise.allSettled([
-                deleteFromCloudinary(existingVideo.video_url),
-                fs.unlink(videoFile.path)
-            ]);
-            video_url = uploaded.secure_url;
-            duration = uploaded.duration;
+        const existingVideo = await getVideoById(id);
+        if (!existingVideo) {
+            throw new Error('Video tidak ditemukan');
         }
 
-        if (thumbnailFile) {
-            const uploaded = await uploadFromPath(thumbnailFile.path, 'thumbnails', 'image');
-            await Promise.allSettled([
-                deleteFromCloudinary(existingVideo.thumbnail_url),
-                fs.unlink(thumbnailFile.path)
-            ]);
-            thumbnail_url = uploaded.secure_url;
+        const shouldDeleteVideo = new_video_url && new_video_url !== existingVideo.video_url;
+        const shouldDeleteThumbnail = new_thumbnail_url && new_thumbnail_url !== existingVideo.thumbnail_url;
+
+        const deletions = [];
+        if (shouldDeleteVideo) deletions.push(deleteFromCloudinary(existingVideo.video_url));
+        if (shouldDeleteThumbnail) deletions.push(deleteFromCloudinary(existingVideo.thumbnail_url));
+
+        if (deletions.length > 0) {
+            const deletionResults = await Promise.allSettled(deletions);
+            deletionResults.forEach((res, idx) => {
+                if (res.status === 'rejected') {
+                    const jenis = idx === 0 && shouldDeleteVideo ? 'video' : 'thumbnail';
+                    console.warn(`Gagal hapus ${jenis} lama dari Cloudinary:`, res.reason?.message || res.reason);
+                }
+            });
         }
+
+        const video_url = new_video_url ?? existingVideo.video_url;
+        const thumbnail_url = new_thumbnail_url ?? existingVideo.thumbnail_url;
+        const duration = new_duration ?? existingVideo.duration;
+        const finalTitle = title ?? existingVideo.title;
+        const finalDescription = description ?? existingVideo.description;
 
         const updatedVideo = await prisma.video.update({
             where: { id },
             data: {
-                title: title || existingVideo.title,
-                description: description || existingVideo.description,
-                searchable: `${title || existingVideo.title} ${description || existingVideo.description}`,
+                title: finalTitle,
+                description: finalDescription,
+                searchable: `${finalTitle} ${finalDescription}`,
                 duration,
                 video_url,
                 thumbnail_url,
                 category_id: category_id ? parseInt(category_id) : null,
-                updated: new Date()
-            }
+                updated: new Date(),
+            },
         });
 
         try {
             await syncVideoIndex(updatedVideo);
         } catch (syncErr) {
-            console.warn('Gagal sync Elasticsearch (update):', syncErr);
+            console.warn('Gagal sync Elasticsearch (update):', syncErr?.message || syncErr);
         }
 
         return updatedVideo;
 
     } catch (err) {
-        console.error('Gagal update video:', err);
+        console.error('Gagal update video:', err?.message || err);
         throw new Error('Update video gagal');
     }
 };
 
 const deleteVideo = async (id) => {
-    const existingVideo = await getVideoById(id);
-
     try {
+        const existingVideo = await getVideoById(id);
+        if (!existingVideo) {
+            throw new Error('Video tidak ditemukan');
+        }
+
         const [cloudVideo, cloudThumb] = await Promise.allSettled([
             deleteFromCloudinary(existingVideo.video_url),
-            deleteFromCloudinary(existingVideo.thumbnail_url)
+            deleteFromCloudinary(existingVideo.thumbnail_url),
         ]);
 
         if (cloudVideo.status === 'rejected') {
-            console.warn('Gagal hapus video cloud:', cloudVideo.reason);
+            console.warn('Gagal hapus video dari Cloudinary:', cloudVideo.reason?.message || cloudVideo.reason);
         }
         if (cloudThumb.status === 'rejected') {
-            console.warn('Gagal hapus thumbnail cloud:', cloudThumb.reason);
+            console.warn('Gagal hapus thumbnail dari Cloudinary:', cloudThumb.reason?.message || cloudThumb.reason);
         }
 
         try {
             await deleteVideoIndex(id);
         } catch (syncErr) {
-            console.warn('Gagal hapus index Elasticsearch:', syncErr);
+            console.warn('Gagal hapus index Elasticsearch:', syncErr?.message || syncErr);
         }
 
-        return await prisma.video.delete({ where: { id } });
+        const deleted = await prisma.video.delete({ where: { id } });
+        return deleted;
 
     } catch (err) {
-        console.error('Gagal hapus video:', err);
+        console.error('Gagal menghapus video:', err?.message || err);
         throw new Error('Gagal menghapus video');
     }
 };
+
 
 module.exports = {
     getAllVideos,
