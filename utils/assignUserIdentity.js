@@ -31,6 +31,3 @@ const getWatchHistorySelector = (watchHistory) => {
 };
 
 module.exports = { assignUserIdentity, getWatchHistorySelector };
-
-
-module.exports = assignUserIdentity;
