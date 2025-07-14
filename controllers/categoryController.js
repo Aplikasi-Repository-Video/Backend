@@ -18,6 +18,23 @@ const getAllCategories = async (req, res) => {
     }
 };
 
+const getCategoriesWithVideos = async (req, res) => {
+    try {
+        const categories = await categoryService.getCategoriesWithVideos();
+        res.status(200).json({
+            success: true,
+            message: 'Berhasil mengambil semua kategori dengan video',
+            data: categories
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat mengambil semua kategori dengan video',
+            error: error.message
+        });
+    }
+};
+
 const getCategoryById = async (req, res) => {
     try {
         const { error } = validateCategoryId.validate(req.params);
@@ -125,5 +142,6 @@ module.exports = {
     getCategoryById,
     createCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
+    getCategoriesWithVideos
 };

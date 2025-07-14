@@ -21,6 +21,7 @@ const routeConfigs = [
     { method: 'delete', path: '/users/:id', controller: userController.deleteUser, middlewares: ['auth', 'user'] },
 
     // Categories
+    { method: 'get', path: '/categorios/has-videos', controller: categoryController.getCategoriesWithVideos, middlewares: [] },
     { method: 'get', path: '/categories', controller: categoryController.getAllCategories, middlewares: [] },
     { method: 'post', path: '/categories', controller: categoryController.createCategory, middlewares: ['auth', 'admin'] },
     { method: 'put', path: '/categories/:id', controller: categoryController.updateCategory, middlewares: ['auth', 'admin'] },
