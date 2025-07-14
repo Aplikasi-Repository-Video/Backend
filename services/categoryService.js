@@ -4,6 +4,16 @@ const getAllCategories = () => {
     return prisma.category.findMany();
 };
 
+const getCategoriesWithVideos = () => {
+    return prisma.category.findMany({
+        where: {
+            Video: {
+                some: {},
+            },
+        },
+    })
+}
+
 const getCategoryById = (id) => {
     return prisma.category.findUnique({ where: { id } });
 };
@@ -38,4 +48,5 @@ module.exports = {
     createCategory,
     updateCategory,
     deleteCategory,
+    getCategoriesWithVideos
 };
