@@ -8,16 +8,18 @@ const normalizeText = (text) =>
 
 const syncVideoIndex = async (video) => {
     try {
-        const searchable = normalizeText(`${video.title} ${video.description}`);
+        const searchable = normalizeText(`${video.title} ${video.category} ${video.description} ${video.transcript}`);
 
         await elasticClient.index({
-            index: 'videos',
+            index: 'eduvid-index',
             id: video.id,
             body: {
                 id: video.id,
                 title: video.title,
                 description: video.description,
+                transcript: video.transcript,
                 searchable,
+                words: video.words,
             },
         });
     } catch (error) {
@@ -28,7 +30,7 @@ const syncVideoIndex = async (video) => {
 const deleteVideoIndex = async (id) => {
     try {
         await elasticClient.delete({
-            index: 'videos',
+            index: 'eduvid-index',
             id: id,
         });
     } catch (error) {

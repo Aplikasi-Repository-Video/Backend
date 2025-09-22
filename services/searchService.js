@@ -4,12 +4,12 @@ const { elasticClient } = require('../utils/elasticClient');
 const searchInElasticSearch = async (query) => {
   try {
     const result = await elasticClient.search({
-      index: 'videos',
+      index: 'eduvid-index',
       body: {
         query: {
           match: {
             searchable: {
-              query: query,
+              query,
               fuzziness: 'AUTO'
             }
           }
@@ -17,13 +17,10 @@ const searchInElasticSearch = async (query) => {
       }
     });
 
-    if (!result || !result.hits || !result.hits.hits) {
-      throw new Error('Tidak ada hasil yang ditemukan dari pencarian Elasticsearch');
-    }
-
     return result.hits.hits.map(hit => ({
       id: hit._source.id,
-      score: hit._score
+      score: hit._score,
+      words: hit._source.words,
     }));
   } catch (error) {
     console.error('Error saat mencari di Elasticsearch:', error.message);
@@ -38,9 +35,7 @@ const searchVideos = async (query) => {
 
     const videos = await prisma.video.findMany({
       where: { id: { in: ids } },
-      include: {
-        _count: { select: { Like: true, Comment: true } }
-      }
+      include: { _count: { select: { Like: true, Comment: true } } }
     });
 
     const videoMap = videos.reduce((map, video) => {
@@ -48,16 +43,18 @@ const searchVideos = async (query) => {
       return map;
     }, {});
 
-    const results = searchHits
-      .map(hit => ({ ...videoMap[hit.id], score: hit.score }))
+    return searchHits
+      .map(hit => ({
+        ...videoMap[hit.id],
+        score: hit.score,
+        words: hit.words
+      }))
       .filter(Boolean);
-
-    return results;
-
   } catch (error) {
     console.error('Gagal mencari video:', error.message);
     return [];
   }
 };
+
 
 module.exports = { searchVideos };

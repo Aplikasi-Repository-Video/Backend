@@ -1,6 +1,16 @@
 const prisma = require('../prisma/client');
 const { deleteFromCloudinary } = require('../utils/cloudinary');
 const { syncVideoIndex, deleteVideoIndex } = require('../utils/elasticHelpers');
+const { v4: uuidv4 } = require('uuid');
+const { prepareTranscriptForIndex } = require('../utils/transcriptHelpers');
+const config = require('../config/cloudinaryConfig');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+    cloud_name: config.cloud_name,
+    api_key: config.api_key,
+    api_secret: config.api_secret,
+});
 
 const getAllVideos = async () => {
     return await prisma.video.findMany({
@@ -62,41 +72,112 @@ const getVideosByCategory = async (id) => {
     });
 };
 
-const createVideo = async ({ title, description, category_id, user_id, video_url, thumbnail_url, duration }) => {
+const initializePendingVideo = async ({ title, description, category_id, user_id, thumbnail_url }) => {
     try {
-        const now = new Date();
-
-        const newVideo = await prisma.video.create({
+        const public_id = uuidv4();
+        await prisma.video.create({
             data: {
+                public_id,
                 title,
                 description,
-                searchable: `${title} ${description}`,
-                duration: duration ?? 0, // default jika tidak ada durasi
-                video_url,
                 thumbnail_url,
                 category_id: category_id ? parseInt(category_id) : null,
                 user_id: parseInt(user_id),
-                created: now,
-                updated: now,
+                status: 'PENDING',
+                created: new Date(),
+                updated: new Date(),
             },
         });
-
-        // Sinkronisasi ke Elasticsearch
-        try {
-            await syncVideoIndex(newVideo);
-        } catch (syncErr) {
-            console.warn('Gagal sync Elasticsearch:', syncErr?.message || syncErr);
-            // optional: bisa log ke monitoring service di sini
-        }
-
-        return newVideo;
-
+        return public_id;
     } catch (error) {
-        console.error('Gagal membuat video:', error?.message || error);
-        throw new Error('Gagal menyimpan video, perubahan dibatalkan');
+        throw new Error('Gagal memulai proses upload video');
     }
 };
 
+const finalizeVideoFromWebhook = async (webhookBody) => {
+    try {
+        const { public_id, secure_url, duration, context, notification_type, info_status } = webhookBody;
+        if (!public_id) throw new Error("Public ID tidak ditemukan di webhook");
+
+        const cleanPublicId = public_id.split("/").pop();
+
+        if (notification_type === "upload") {
+            const video = await prisma.video.update({
+                where: { public_id: cleanPublicId },
+                data: {
+                    video_url: secure_url,
+                    duration: duration ? Math.round(duration) : null,
+                    status: "PROCESSING",
+                    updated: new Date(),
+                },
+            });
+
+            return video;
+        }
+
+        if (notification_type === "info" && info_status === "pending") {
+            return null;
+        }
+
+        let transcriptText = "";
+        let transcriptDoc = null;
+
+        if (notification_type === "info" && info_status === "complete") {
+            try {
+                const existingVideo = await prisma.video.findUnique({
+                    where: { public_id: cleanPublicId },
+                    select: {
+                        title: true,
+                        description: true,
+                        Category: { select: { name: true } },
+                    },
+                });
+
+                transcriptDoc = await prepareTranscriptForIndex(public_id, {
+                    video_id: existingVideo?.id,
+                    public_id: cleanPublicId,
+                    title: existingVideo?.title,
+                    description: existingVideo?.description,
+                    category: existingVideo?.Category?.name || "",
+                });
+
+                transcriptText = transcriptDoc?.full_transcript || "";
+            } catch (err) {
+                console.error(`❌ Gagal ambil transcript dari Cloudinary (public_id: ${public_id}):`, err.message);
+            }
+        }
+
+        const searchableText = `${transcriptDoc?.title || ''} ${transcriptDoc?.description || ''} ${transcriptDoc?.category || ''} ${transcriptText}`.trim();
+        const updatedVideo = await prisma.video.update({
+            where: { public_id: cleanPublicId },
+            data: {
+                status: transcriptText ? "COMPLETED" : "PROCESSING",
+                transcript: transcriptText,
+                updated: new Date(),
+            },
+        });
+
+        if (transcriptDoc) {
+            await syncVideoIndex(transcriptDoc);
+            console.log(`📤 Video ${public_id} siap diindex ke Elasticsearch`);
+        }
+
+        return updatedVideo;
+    } catch (error) {
+        console.error(`❌ Gagal finalisasi video dari webhook (public_id: ${webhookBody.public_id}):`, error.message);
+
+        try {
+            await prisma.video.update({
+                where: { public_id: webhookBody.public_id.split("/").pop() },
+                data: { status: "FAILED" },
+            });
+        } catch (dbErr) {
+            console.error(`⚠️ Gagal set status FAILED di DB:`, dbErr.message);
+        }
+
+        throw error;
+    }
+};
 
 const updateVideo = async (
     id,
@@ -136,7 +217,6 @@ const updateVideo = async (
             data: {
                 title: finalTitle,
                 description: finalDescription,
-                searchable: `${finalTitle} ${finalDescription}`,
                 duration,
                 video_url,
                 thumbnail_url,
@@ -146,7 +226,7 @@ const updateVideo = async (
         });
 
         try {
-            await syncVideoIndex(updatedVideo);
+            // await syncVideoIndex(updatedVideo);
         } catch (syncErr) {
             console.warn('Gagal sync Elasticsearch (update):', syncErr?.message || syncErr);
         }
@@ -179,7 +259,7 @@ const deleteVideo = async (id) => {
         }
 
         try {
-            await deleteVideoIndex(id);
+            // await deleteVideoIndex(id);
         } catch (syncErr) {
             console.warn('Gagal hapus index Elasticsearch:', syncErr?.message || syncErr);
         }
@@ -196,9 +276,46 @@ const deleteVideo = async (id) => {
 
 module.exports = {
     getAllVideos,
+    initializePendingVideo,
+    finalizeVideoFromWebhook,
     getVideoById,
     getVideosByCategory,
-    createVideo,
+    // createVideo,
     updateVideo,
     deleteVideo
 };
+
+// const createVideo = async ({ title, description, category_id, user_id, video_url, thumbnail_url, duration }) => {
+//     try {
+//         const now = new Date();
+
+//         const newVideo = await prisma.video.create({
+//             data: {
+//                 title,
+//                 description,
+//                 searchable: `${title} ${description}`,
+//                 duration: duration ?? 0, // default jika tidak ada durasi
+//                 video_url,
+//                 thumbnail_url,
+//                 category_id: category_id ? parseInt(category_id) : null,
+//                 user_id: parseInt(user_id),
+//                 created: now,
+//                 updated: now,
+//             },
+//         });
+
+//         // Sinkronisasi ke Elasticsearch
+//         try {
+//             await syncVideoIndex(newVideo);
+//         } catch (syncErr) {
+//             console.warn('Gagal sync Elasticsearch:', syncErr?.message || syncErr);
+//             // optional: bisa log ke monitoring service di sini
+//         }
+
+//         return newVideo;
+
+//     } catch (error) {
+//         console.error('Gagal membuat video:', error?.message || error);
+//         throw new Error('Gagal menyimpan video, perubahan dibatalkan');
+//     }
+// };

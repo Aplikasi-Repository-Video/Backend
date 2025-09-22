@@ -41,15 +41,16 @@ model Video {
   id            Int      @id @default(autoincrement())
   title         String
   description   String
-  duration      Int
-  video_url     String
+  public_id     String   @unique
+  status        String   @default("PENDING")
+  transcript    String?  @db.Text
+  duration      Int?
+  video_url     String?
   thumbnail_url String
   category_id   Int?
   user_id       Int
   created       DateTime
   updated       DateTime
-
-  searchable String @db.Text // Kolom ini akan digunakan untuk FTS
 
   Category Category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
   User     User      @relation(fields: [user_id], references: [id])

@@ -30,8 +30,38 @@ const deleteFromCloudinary = async (fileUrl) => {
     }
 };
 
+// const extractPublicId = (fileUrl) => {
+//     if (!fileUrl) return null;
+
+//     const parts = fileUrl.split('/upload/');
+//     if (parts.length < 2) return null;
+
+//     const pathWithExtension = parts[1].replace(/^v\d+\//, '');
+//     return decodeURIComponent(pathWithExtension.replace(/\.[^/.]+$/, ''));
+// };
+
+// const getTranscription = async (fileUrl) => {
+//     try {
+//         const publicId = extractPublicId(fileUrl);
+//         if (!publicId) return null;
+
+//         const result = await cloudinary.uploader.upload("lincoln.mp4", {
+//             resource_type: "video",
+//             raw_convert: "google_speech"
+//         });
+
+//         console.log("[Upload Result]", JSON.stringify(result, null, 2));
+
+
+//         return result?.info?.transcription?.google_speech || null;
+//     } catch (err) {
+//         console.error('[Cloudinary] Gagal transkripsi:', err?.message || err);
+//         return null;
+//     }
+// };
 
 module.exports = {
     cloudinary,
-    deleteFromCloudinary
-}
+    deleteFromCloudinary,
+    // getTranscription
+};

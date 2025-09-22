@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "video" ALTER COLUMN "video_url" DROP NOT NULL,
+ALTER COLUMN "searchable" DROP NOT NULL,
+ALTER COLUMN "duration" DROP NOT NULL;

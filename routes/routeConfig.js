@@ -6,6 +6,8 @@ const likeController = require('../controllers/likeController');
 const watchHistoryController = require('../controllers/watchHistoryController');
 const searchController = require('../controllers/searchController');
 const authController = require('../controllers/authController');
+const cloudinaryController = require('../controllers/cloudinaryController');
+
 
 const routeConfigs = [
     { method: 'get', path: '/', controller: (req, res) => res.json({ message: 'Hello... World...' }), middlewares: [] },
@@ -28,6 +30,9 @@ const routeConfigs = [
     { method: 'delete', path: '/categories/:id', controller: categoryController.deleteCategory, middlewares: ['auth', 'admin'] },
 
     // Videos
+    { method: 'post', path: '/cloudinary/generate-upload-signature', controller: cloudinaryController.handleGenerateSignature, middlewares: ['auth', 'admin'] },
+    // cloudinary/webhook
+    { method: 'post', path: '/cloudinary/webhook', controller: cloudinaryController.handleCloudinaryWebhook, middlewares: [] },
     {
         method: 'post',
         path: '/videos',
